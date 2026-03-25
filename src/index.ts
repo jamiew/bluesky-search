@@ -11,7 +11,7 @@ app.get("/health", (c) => c.json({ ok: true }));
 app.get("/search", async (c) => {
   const q = c.req.query("q") ?? "grand army plaza";
   const sort = c.req.query("sort") === "latest" ? "latest" : "top";
-  const limit = Math.min(Number(c.req.query("limit")) || 25, 100);
+  const limit = Number(c.req.query("limit")) || undefined;
   const cursor = c.req.query("cursor");
   const since = c.req.query("since");
   const until = c.req.query("until");

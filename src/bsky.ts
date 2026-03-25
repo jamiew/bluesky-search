@@ -1,17 +1,23 @@
-import { AtpAgent } from "@atproto/api";
+import { AtpAgent, AppBskyFeedPost, AtUri } from "@atproto/api";
 
 const agent = new AtpAgent({ service: "https://bsky.social" });
-let authenticated = false;
+let authPromise: Promise<void> | null = null;
 
-async function ensureAuth() {
-  if (authenticated) return;
-  const handle = process.env.BSKY_HANDLE;
-  const password = process.env.BSKY_APP_PASSWORD;
-  if (!handle || !password) {
-    throw new Error("BSKY_HANDLE and BSKY_APP_PASSWORD must be set in .env");
-  }
-  await agent.login({ identifier: handle, password });
-  authenticated = true;
+function ensureAuth(): Promise<void> {
+  if (agent.hasSession) return Promise.resolve();
+  if (authPromise) return authPromise;
+  authPromise = (async () => {
+    const handle = process.env.BSKY_HANDLE;
+    const password = process.env.BSKY_APP_PASSWORD;
+    if (!handle || !password) {
+      throw new Error("BSKY_HANDLE and BSKY_APP_PASSWORD must be set in .env");
+    }
+    await agent.login({ identifier: handle, password });
+  })().catch((err) => {
+    authPromise = null;
+    throw err;
+  });
+  return authPromise;
 }
 
 export interface SearchOpts {
@@ -35,12 +41,13 @@ export async function searchPosts(query: string, opts: SearchOpts = {}) {
   });
 
   const posts = res.data.posts.map((post) => {
-    const record = post.record as { text?: string; createdAt?: string };
+    const record = post.record as AppBskyFeedPost.Record;
+    const rkey = new AtUri(post.uri).rkey;
     return {
       uri: post.uri,
       cid: post.cid,
-      url: `https://bsky.app/profile/${post.author.handle}/post/${post.uri.split("/").pop()}`,
-      text: record.text ?? "",
+      url: `https://bsky.app/profile/${post.author.handle}/post/${rkey}`,
+      text: record.text,
       author: {
         handle: post.author.handle,
         displayName: post.author.displayName ?? post.author.handle,
