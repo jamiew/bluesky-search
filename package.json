@@ -1,0 +1,23 @@
+{
+  "name": "bluesky-search",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "bun --watch run src/index.ts",
+    "start": "bun run src/index.ts",
+    "check": "bunx tsc --noEmit",
+    "test": "./test.sh"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.19.4",
+    "hono": "^4.12.9"
+  }
+}
