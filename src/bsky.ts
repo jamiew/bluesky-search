@@ -31,29 +31,22 @@ export interface SearchOpts {
 export async function searchPosts(query: string, opts: SearchOpts = {}) {
   await ensureAuth();
 
-  const res = await agent.app.bsky.feed.searchPosts({
-    q: query,
-    sort: opts.sort ?? "top",
-    limit: Math.min(opts.limit ?? 25, 100),
-    cursor: opts.cursor,
-    since: opts.since,
-    until: opts.until,
-  });
+  const res = await agent.app.bsky.feed.searchPosts({ q: query, ...opts });
 
   const posts = res.data.posts.map((post) => {
-    const record = post.record as AppBskyFeedPost.Record;
+    const record = AppBskyFeedPost.isRecord(post.record) ? post.record : undefined;
     const rkey = new AtUri(post.uri).rkey;
     return {
       uri: post.uri,
       cid: post.cid,
       url: `https://bsky.app/profile/${post.author.handle}/post/${rkey}`,
-      text: record.text,
+      text: record?.text ?? "",
       author: {
         handle: post.author.handle,
         displayName: post.author.displayName ?? post.author.handle,
         avatar: post.author.avatar,
       },
-      createdAt: record.createdAt,
+      createdAt: record?.createdAt ?? post.indexedAt,
       likeCount: post.likeCount ?? 0,
       repostCount: post.repostCount ?? 0,
       replyCount: post.replyCount ?? 0,
